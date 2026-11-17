@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f2f4f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Work out how much each person pays per month for a mobile plan, sub-lines, a phone on contract and a staff rebate.">
+<title>Mobile Plan Split Calculator — cost per person per month</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f2f4f9;
+    --card: #ffffff;
+    --input: #f8f9fc;
+    --ink: #101828;
+    --muted: #667085;
+    --line: #e4e7ec;
+    --accent: #4f46e5;
+    --accent-ink: #ffffff;
+    --accent-soft: #eef0ff;
+    --accent-line: #d7dbff;
+    --good: #0b7a4b;
+    --bad: #d92d20;
+    --radius: 18px;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 10px 28px -16px rgba(16, 24, 40, .28);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1020;
+      --card: #151b2e;
+      --input: #101728;
+      --ink: #e9edf7;
+      --muted: #98a2b3;
+      --line: #26304a;
+      --accent: #8e9bff;
+      --accent-ink: #0b1020;
+      --accent-soft: #1b2440;
+      --accent-line: #2f3d63;
+      --good: #4ade80;
+      --bad: #ff8a80;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 14px 32px -18px rgba(0, 0, 0, .9);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    padding:
+      max(18px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right))
+      max(28px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+    display: flex;
+    justify-content: center;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  h1 {
+    margin: 4px 0 0;
+    font-size: 1.35rem;
+    line-height: 1.25;
+    letter-spacing: -.015em;
+  }
+
+  .lede {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: .9rem;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+  }
+
+  /* ---------- result ---------- */
+
+  .result {
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+  }
+
+  .eyebrow {
+    margin: 0;
+    font-size: .78rem;
+    font-weight: 650;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .big {
+    margin: 6px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 3px;
+    font-size: clamp(2.1rem, 11vw, 3.4rem);
+    font-weight: 750;
+    letter-spacing: -.03em;
+    line-height: 1.08;
+  }
+
+  #per-person-month {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--accent);
+  }
+
+  .big-unit {
+    font-size: clamp(.85rem, 3.4vw, 1rem);
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .result-note {
+    margin: 4px 0 0;
+    font-size: .9rem;
+    color: var(--muted);
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  @media (min-width: 600px) {
+    .stats { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  /* very narrow screens: one stat per row so figures never truncate */
+  @media (max-width: 339px) {
+    .stats { grid-template-columns: 1fr; }
+  }
+
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 9px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .stat-label {
+    font-size: .72rem;
+    line-height: 1.25;
+    color: var(--muted);
+  }
+
+  .stat-value {
+    font-size: clamp(.88rem, 3.6vw, 1.02rem);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .phone-note {
+    margin: 10px 0 0;
+    font-size: .8rem;
+    color: var(--muted);
+  }
+
+  /* ---------- form ---------- */
+
+  .group + .group { margin-top: 16px; }
+
+  .group-title {
+    margin: 0 0 10px;
+    font-size: .74rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .fields {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  @media (min-width: 540px) {
+    .fields { grid-template-columns: 1fr 1fr; }
+  }
+
+  .field { min-width: 0; }
+
+  .field label {
+    display: block;
+    font-size: .855rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .field label .unit {
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--input);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0 12px;
+    min-height: 48px;
+    transition: border-color .12s ease, box-shadow .12s ease;
+  }
+
+  .input-wrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .prefix, .suffix {
+    color: var(--muted);
+    font-size: .9rem;
+    flex: none;
+  }
+
+  .input-wrap input,
+  .input-wrap select {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 16px; /* prevents iOS zoom-on-focus */
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    padding: 12px 0;
+    border-radius: 12px;
+  }
+
+  .input-wrap input:focus,
+  .input-wrap select:focus { outline: none; }
+
+  .input-wrap select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 22px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23667085' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M5 8l5 5 5-5'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0 center;
+    background-size: 16px 16px;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+
+  .field.invalid .input-wrap { border-color: var(--bad); }
+
+  .hint {
+    margin: 5px 0 0;
+    font-size: .76rem;
+    color: var(--bad);
+  }
+
+  .hint[hidden] { display: none; }
+
+  .banner {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--bad) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent);
+    color: var(--bad);
+    font-size: .84rem;
+    font-weight: 600;
+  }
+
+  .banner[hidden] { display: none; }
+
+  /* ---------- buttons ---------- */
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  button {
+    font: inherit;
+    font-size: .92rem;
+    font-weight: 650;
+    min-height: 46px;
+    padding: 0 18px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .08s ease, background .12s ease, border-color .12s ease;
+  }
+
+  button:active { transform: scale(.98); }
+
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---------- breakdown ---------- */
+
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+    letter-spacing: -.01em;
+  }
+
+  .card .card-sub {
+    margin: 0 0 10px;
+    font-size: .8rem;
+    color: var(--muted);
+  }
+
+  .rows { display: grid; }
+
+  .row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: .88rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .row:last-child { border-bottom: 0; }
+
+  .row .lbl { flex: 1 1 auto; min-width: 0; }
+
+  .row .val {
+    flex: none;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  .row .val.neg { color: var(--good); }
+
+  .row.total {
+    border-top: 2px solid var(--line);
+    border-bottom: 0;
+    font-weight: 700;
+    font-size: .95rem;
+    padding-top: 12px;
+  }
+
+  .row.answer {
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+    padding-top: 12px;
+    font-weight: 750;
+    font-size: 1rem;
+    color: var(--accent);
+  }
+
+  .row.answer .val { color: var(--accent); }
+
+  /* ---------- formula ---------- */
+
+  details {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--card);
+    padding: 0 14px;
+  }
+
+  summary {
+    cursor: pointer;
+    padding: 13px 0;
+    font-size: .88rem;
+    font-weight: 650;
+    list-style-position: inside;
+  }
+
+  summary::marker { color: var(--muted); }
+
+  details[open] summary { border-bottom: 1px solid var(--line); }
+
+  details .inner {
+    padding: 12px 0 14px;
+    font-size: .84rem;
+    color: var(--muted);
+  }
+
+  details .inner p { margin: 0 0 8px; }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .82em;
+    background: var(--input);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 1px 5px;
+    color: var(--ink);
+  }
+
+  .formula {
+    display: block;
+    margin: 0 0 8px;
+    padding: 10px 12px;
+    background: var(--input);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--ink);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
+  }
+
+  footer {
+    font-size: .76rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 0 6px;
+  }
+
+  /* ---------- toast ---------- */
+
+  #toast {
+    position: fixed;
+    left: 50%;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    transform: translate(-50%, 16px);
+    max-width: calc(100% - 40px);
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: .84rem;
+    font-weight: 600;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease, transform .18s ease;
+    z-index: 10;
+  }
+
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Mobile plan split</h1>
+    <p class="lede">How much each person really pays per month — plan, sub-lines, the phone deal and your staff rebate, all in one number.</p>
+  </header>
+
+  <!-- ===== Result ===== -->
+  <section class="card result" aria-labelledby="result-title">
+    <p class="eyebrow" id="result-title">Each person pays</p>
+    <p class="big"><span id="per-person-month">—</span><span class="big-unit">/ month</span></p>
+    <p class="result-note" id="result-note">—</p>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">Per person, whole term</span>
+        <span class="stat-value" id="stat-per-person-total">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Group total, whole term</span>
+        <span class="stat-value" id="stat-group-total">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Group cost per month</span>
+        <span class="stat-value" id="stat-group-month">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label" id="stat-phone-label">Phone resale profit</span>
+        <span class="stat-value" id="stat-phone">—</span>
+      </div>
+    </div>
+
+    <p class="phone-note" id="phone-note"></p>
+  </section>
+
+  <p class="banner" id="banner" role="alert" hidden>Check the highlighted fields — a value is missing or invalid.</p>
+
+  <!-- ===== Inputs ===== -->
+  <form class="card" id="calc-form" novalidate autocomplete="off">
+    <div class="group">
+      <p class="group-title" id="g-plan">Plan</p>
+      <div class="fields">
+        <div class="field">
+          <label for="planCost">Plan cost <span class="unit">/ month</span></label>
+          <div class="input-wrap">
+            <span class="prefix">$</span>
+            <input id="planCost" name="planCost" type="number" inputmode="decimal" step="0.01" min="0" value="49.60">
+          </div>
+          <p class="hint" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="months">Contract duration</label>
+          <div class="input-wrap">
+            <select id="months" name="months">
+              <option value="12">12 months</option>
+              <option value="24" selected>24 months</option>
+              <option value="36">36 months</option>
+            </select>
+            <span class="suffix" id="months-years">2 years</span>
+          </div>
+          <p class="hint" hidden></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="group-title" id="g-phone">Phone on contract</p>
+      <div class="fields">
+        <div class="field">
+          <label for="retailPrice">Phone retail price</label>
+          <div class="input-wrap">
+            <span class="prefix">$</span>
+            <input id="retailPrice" name="retailPrice" type="number" inputmode="decimal" step="0.01" min="0" value="2199">
+          </div>
+          <p class="hint" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="sellingPrice">Phone selling price</label>
+          <div class="input-wrap">
+            <span class="prefix">$</span>
+            <input id="sellingPrice" name="sellingPrice" type="number" inputmode="decimal" step="0.01" min="0" value="2199">
+          </div>
+          <p class="hint" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="contractPrice">Phone contract price</label>
+          <div class="input-wrap">
+            <span class="prefix">$</span>
+            <input id="contractPrice" name="contractPrice" type="number" inputmode="decimal" step="0.01" min="0" value="1440">
+          </div>
+          <p class="hint" hidden></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="group-title" id="g-lines">Sub-lines &amp; rebate</p>
+      <div class="fields">
+        <div class="field">
+          <label for="subLineCost">Cost per sub-line <span class="unit">/ month</span></label>
+          <div class="input-wrap">
+            <span class="prefix">$</span>
+            <input id="subLineCost" name="subLineCost" type="number" inputmode="decimal" step="0.01" min="0" value="17.06">
+          </div>
+          <p class="hint" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="subLineCount">Number of sub-lines</label>
+          <div class="input-wrap">
+            <input id="subLineCount" name="subLineCount" type="number" inputmode="numeric" step="1" min="0" value="3">
+            <span class="suffix">lines</span>
+          </div>
+          <p class="hint" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="annualRebate">Annual rebate amount</label>
+          <div class="input-wrap">
+            <span class="prefix">$</span>
+            <input id="annualRebate" name="annualRebate" type="number" inputmode="decimal" step="0.01" min="0" value="300">
+            <span class="suffix">/ year</span>
+          </div>
+          <p class="hint" hidden></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="primary" id="copy-btn">Copy share link</button>
+      <button type="button" id="reset-btn">Reset to defaults</button>
+    </div>
+  </form>
+
+  <!-- ===== Breakdown ===== -->
+  <section class="card" id="breakdown-card" aria-labelledby="breakdown-title">
+    <h2 id="breakdown-title">Where the money goes</h2>
+    <p class="card-sub">Whole contract, all people included. Green means money coming back.</p>
+    <div class="rows" id="breakdown"></div>
+  </section>
+
+  <!-- ===== Formula ===== -->
+  <details>
+    <summary>How this is calculated</summary>
+    <div class="inner">
+      <p><code>people = sub-lines + 1</code> (the main line is a person too).</p>
+      <span class="formula">monthly service = plan cost + (cost per sub-line × sub-lines)
+rebate total    = annual rebate × months ÷ 12
+phone net       = contract price − selling price   <span>(negative = profit)</span>
+total cost      = monthly service × months − rebate total + phone net
+per person/mo   = total cost ÷ months ÷ people</span>
+      <p>The phone retail price is reference only: it shows the resale value of the deal, but it is not part of the split. The split uses what you actually paid (contract price) against what you actually sold it for (selling price).</p>
+      <p>Everything runs in your browser. Nothing is uploaded anywhere.</p>
+    </div>
+  </details>
+
+  <footer>Values save automatically on this device and are encoded into the URL when you share it.</footer>
+
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------------------------------------------------------------- config --
+
+  const STORAGE_KEY = 'mobile-plan-split:v1';
+
+  const DEFAULT_TEXT = {
+    planCost: '49.60',
+    months: '24',
+    retailPrice: '2199',
+    sellingPrice: '2199',
+    contractPrice: '1440',
+    subLineCost: '17.06',
+    subLineCount: '3',
+    annualRebate: '300'
+  };
+
+  const DEFAULTS = Object.fromEntries(
+    Object.entries(DEFAULT_TEXT).map(([k, v]) => [k, Number(v)])
+  );
+
+  const FIELDS = [
+    { key: 'planCost',      param: 'p', min: 0,    max: 1e6 },
+    { key: 'months',        param: 'n', min: 12,   max: 36,   allowed: [12, 24, 36] },
+    { key: 'retailPrice',   param: 'r', min: 0,    max: 1e7 },
+    { key: 'sellingPrice',  param: 's', min: 0,    max: 1e7 },
+    { key: 'contractPrice', param: 'c', min: 0,    max: 1e7 },
+    { key: 'subLineCost',   param: 'l', min: 0,    max: 1e5 },
+    { key: 'subLineCount',  param: 'm', min: 0,    max: 1000, integer: true },
+    { key: 'annualRebate',  param: 'a', min: 0,    max: 1e7 }
+  ];
+
+  // ---------------------------------------------------------------- helpers --
+
+  const MINUS = '\u2212';
+  const MONEY = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  /** "$1,234.56" / "−$1,234.56" */
+  function money(value) {
+    const rounded = Math.round(Number(value) * 100) / 100;
+    const text = '$' + MONEY.format(Math.abs(rounded));
+    return rounded < 0 ? MINUS + text : text;
+  }
+
+  /** "+$12.00" / "−$12.00" / "$0.00" */
+  function signed(value) {
+    const rounded = Math.round(Number(value) * 100) / 100;
+    if (rounded === 0) return money(0);
+    return (rounded < 0 ? MINUS : '+') + '$' + MONEY.format(Math.abs(rounded));
+  }
+
+  function plural(count, word) {
+    return count === 1 ? word : word + 's';
+  }
+
+  function peopleWord(count) {
+    return count === 1 ? 'person' : 'people';
+  }
+
+  function trimNumber(value) {
+    return String(Math.round(Number(value) * 1e6) / 1e6);
+  }
+
+  // ----------------------------------------------------------------- lookup --
+
+  const el = {};
+  for (const field of FIELDS) {
+    el[field.key] = document.getElementById(field.key);
+  }
+
+  const form = document.getElementById('calc-form');
+  const banner = document.getElementById('banner');
+  const breakdown = document.getElementById('breakdown');
+  const breakdownCard = document.getElementById('breakdown-card');
+  const perPersonMonth = document.getElementById('per-person-month');
+  const resultNote = document.getElementById('result-note');
+  const statPerPersonTotal = document.getElementById('stat-per-person-total');
+  const statGroupTotal = document.getElementById('stat-group-total');
+  const statGroupMonth = document.getElementById('stat-group-month');
+  const statPhoneLabel = document.getElementById('stat-phone-label');
+  const statPhone = document.getElementById('stat-phone');
+  const phoneNote = document.getElementById('phone-note');
+  const monthsYears = document.getElementById('months-years');
+  const toastEl = document.getElementById('toast');
+
+  // ------------------------------------------------------------- validation --
+
+  function validate(raw) {
+    const state = {};
+    const errors = {};
+
+    for (const field of FIELDS) {
+      const text = raw[field.key] == null ? '' : String(raw[field.key]).trim();
+
+      if (text === '') { errors[field.key] = 'Required'; continue; }
+
+      const value = Number(text);
+      if (!Number.isFinite(value)) { errors[field.key] = 'Enter a number'; continue; }
+      if (field.integer && !Number.isInteger(value)) { errors[field.key] = 'Use a whole number'; continue; }
+      if (field.allowed && !field.allowed.includes(value)) { errors[field.key] = 'Choose 12, 24 or 36'; continue; }
+      if (value < field.min) { errors[field.key] = 'Cannot be negative'; continue; }
+      if (value > field.max) { errors[field.key] = 'That value is too large'; continue; }
+
+      state[field.key] = value;
+    }
+
+    return { state, errors, ok: Object.keys(errors).length === 0 };
+  }
+
+  function sanitize(obj) {
+    const out = {};
+    for (const field of FIELDS) {
+      const value = Number(obj ? obj[field.key] : NaN);
+      const ok =
+        Number.isFinite(value) &&
+        value >= field.min &&
+        value <= field.max &&
+        (!field.integer || Number.isInteger(value)) &&
+        (!field.allowed || field.allowed.includes(value));
+      out[field.key] = ok ? value : DEFAULTS[field.key];
+    }
+    return out;
+  }
+
+  // ---------------------------------------------------------------- compute --
+
+  function compute(s) {
+    const people = s.subLineCount + 1;
+    const monthlyRecurring = s.planCost + s.subLineCost * s.subLineCount;
+    const serviceTotal = monthlyRecurring * s.months;
+    const rebateTotal = s.annualRebate * (s.months / 12);
+    const phoneNet = s.contractPrice - s.sellingPrice;   // positive = cost, negative = profit
+    const totalCost = serviceTotal - rebateTotal + phoneNet;
+    const accountPerMonth = totalCost / s.months;
+    const perPersonPerMonth = accountPerMonth / people;
+    const perPersonTotal = totalCost / people;
+
+    const phoneProfit = s.sellingPrice - s.contractPrice;
+    const retailSave = s.retailPrice - s.contractPrice;
+    const retailSavePct = s.retailPrice > 0 ? (retailSave / s.retailPrice) * 100 : 0;
+
+    return {
+      people,
+      monthlyRecurring,
+      serviceTotal,
+      rebateTotal,
+      phoneNet,
+      totalCost,
+      accountPerMonth,
+      perPersonPerMonth,
+      perPersonTotal,
+      phoneProfit,
+      retailSave,
+      retailSavePct
+    };
+  }
+
+  // ----------------------------------------------------------------- render --
+
+  function row(label, value, options) {
+    const opts = options || {};
+    const node = document.createElement('div');
+    node.className = 'row' + (opts.cls ? ' ' + opts.cls : '');
+
+    const labelEl = document.createElement('span');
+    labelEl.className = 'lbl';
+    labelEl.textContent = label;
+
+    const valueEl = document.createElement('span');
+    valueEl.className = 'val' + (value.startsWith(MINUS) ? ' neg' : '');
+    valueEl.textContent = value;
+
+    node.append(labelEl, valueEl);
+    return node;
+  }
+
+  function renderBreakdown(s, r) {
+    const years = s.months / 12;
+    const fragments = [];
+
+    fragments.push(row(
+      `${money(s.planCost)} plan + ${s.subLineCount} × ${money(s.subLineCost)} ${plural(s.subLineCount, 'sub-line')} (per month)`,
+      signed(r.monthlyRecurring)
+    ));
+    fragments.push(row(
+      `× ${s.months} months of service`,
+      signed(r.serviceTotal)
+    ));
+    fragments.push(row(
+      `Staff rebate (${years} ${plural(years, 'year')} × ${money(s.annualRebate)})`,
+      signed(-r.rebateTotal)
+    ));
+    fragments.push(row(
+      `Phone: paid ${money(s.contractPrice)}, sold for ${money(s.sellingPrice)}`,
+      signed(r.phoneNet)
+    ));
+    fragments.push(row(
+      `Total for ${r.people} ${peopleWord(r.people)} over ${s.months} months`,
+      money(r.totalCost),
+      { cls: 'total' }
+    ));
+    fragments.push(row(
+      `÷ ${r.people} ${peopleWord(r.people)}`,
+      money(r.perPersonTotal)
+    ));
+    fragments.push(row(
+      `÷ ${s.months} months — per person, per month`,
+      money(r.perPersonPerMonth),
+      { cls: 'answer' }
+    ));
+
+    breakdown.replaceChildren(...fragments);
+  }
+
+  function clearResults() {
+    perPersonMonth.textContent = '—';
+    resultNote.textContent = '—';
+    statPerPersonTotal.textContent = '—';
+    statGroupTotal.textContent = '—';
+    statGroupMonth.textContent = '—';
+    statPhone.textContent = '—';
+    statPhoneLabel.textContent = 'Phone resale profit';
+    phoneNote.textContent = '';
+    breakdown.replaceChildren();
+  }
+
+  function render() {
+    const raw = {};
+    for (const field of FIELDS) raw[field.key] = el[field.key].value;
+
+    const { state, errors, ok } = validate(raw);
+
+    for (const field of FIELDS) {
+      const input = el[field.key];
+      const wrap = input.closest('.field');
+      const hint = wrap.querySelector('.hint');
+      const message = errors[field.key];
+
+      wrap.classList.toggle('invalid', Boolean(message));
+      input.setAttribute('aria-invalid', message ? 'true' : 'false');
+      hint.textContent = message || '';
+      hint.hidden = !message;
+    }
+
+    banner.hidden = ok;
+    breakdownCard.hidden = !ok;
+
+    if (!ok) {
+      clearResults();
+      return;
+    }
+
+    const r = compute(state);
+
+    const linesPart = r.people === 1
+      ? 'main line only'
+      : `1 main line + ${state.subLineCount} ${plural(state.subLineCount, 'sub-line')}`;
+
+    perPersonMonth.textContent = money(r.perPersonPerMonth);
+    resultNote.textContent =
+      `${r.people} ${peopleWord(r.people)} · ${state.months}-month contract · ${linesPart}`;
+    statPerPersonTotal.textContent = money(r.perPersonTotal);
+    statGroupTotal.textContent = money(r.totalCost);
+    statGroupMonth.textContent = money(r.accountPerMonth);
+
+    const years = state.months / 12;
+    monthsYears.textContent = `${years} ${plural(years, 'year')}`;
+
+    const profitable = r.phoneProfit >= 0;
+    statPhoneLabel.textContent = profitable ? 'Phone resale profit' : 'Phone net cost';
+    statPhone.textContent = money(Math.abs(r.phoneProfit));
+
+    const discountBit = r.retailSave > 0
+      ? ` · $${MONEY.format(r.retailSave)} (${r.retailSavePct.toFixed(1)}%) below retail`
+      : '';
+    phoneNote.textContent =
+      `Retail ${money(state.retailPrice)} · contract ${money(state.contractPrice)}${discountBit} · sold for ${money(state.sellingPrice)}. Retail price is reference only.`;
+
+    renderBreakdown(state, r);
+
+    save(state);
+    scheduleUrlUpdate(state);
+  }
+
+  // ------------------------------------------------------------ persistence --
+
+  function save(state) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+      /* private mode / file:// restrictions — ignore */
+    }
+  }
+
+  function loadStored() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return null;
+      return sanitize(parsed);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function loadFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    if (!FIELDS.some((f) => params.has(f.param))) return null;
+
+    const obj = {};
+    for (const field of FIELDS) {
+      if (params.has(field.param)) obj[field.key] = params.get(field.param);
+    }
+    return sanitize(obj);
+  }
+
+  function applyState(state) {
+    for (const field of FIELDS) {
+      const value = state[field.key];
+      const input = el[field.key];
+      // money inputs get 2 decimals; selects and counts stay plain integers
+      const plain = field.integer || input.tagName === 'SELECT';
+      input.value = plain ? String(value) : value.toFixed(2);
+    }
+  }
+
+  let urlTimer = 0;
+
+  function buildUrl(state) {
+    const params = new URLSearchParams();
+    for (const field of FIELDS) {
+      params.set(field.param, trimNumber(state[field.key]));
+    }
+    const url = new URL(window.location.href);
+    url.search = params.toString();
+    return url.toString();
+  }
+
+  function scheduleUrlUpdate(state) {
+    clearTimeout(urlTimer);
+    urlTimer = setTimeout(() => {
+      try {
+        window.history.replaceState(null, '', buildUrl(state));
+      } catch (error) {
+        /* some browsers block history writes on file:// — harmless */
+      }
+    }, 300);
+  }
+
+  // ----------------------------------------------------------------- toast --
+
+  let toastTimer = 0;
+
+  function toast(message) {
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  }
+
+  // ---------------------------------------------------------------- actions --
+
+  async function copyLink() {
+    const raw = {};
+    for (const field of FIELDS) raw[field.key] = el[field.key].value;
+    const { state, ok } = validate(raw);
+    if (!ok) {
+      toast('Fix the highlighted fields first');
+      return;
+    }
+
+    const link = buildUrl(state);
+
+    try {
+      await navigator.clipboard.writeText(link);
+      toast('Link copied');
+      return;
+    } catch (error) {
+      /* fall through to legacy path */
+    }
+
+    try {
+      const scratch = document.createElement('textarea');
+      scratch.value = link;
+      scratch.setAttribute('readonly', '');
+      scratch.style.position = 'fixed';
+      scratch.style.top = '-1000px';
+      scratch.style.opacity = '0';
+      document.body.appendChild(scratch);
+      scratch.select();
+      const copied = document.execCommand('copy');
+      scratch.remove();
+      toast(copied ? 'Link copied' : 'Copy failed — select the URL manually');
+    } catch (error) {
+      toast('Copy failed — use the address bar');
+    }
+  }
+
+  function reset() {
+    for (const field of FIELDS) {
+      el[field.key].value = DEFAULT_TEXT[field.key];
+    }
+
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      /* ignore */
+    }
+
+    render();
+
+    // render() re-adds the query string — drop it again so the shared URL is clean
+    clearTimeout(urlTimer);
+    try {
+      window.history.replaceState(null, '', window.location.pathname);
+    } catch (error) {
+      /* ignore */
+    }
+
+    toast('Reset to defaults');
+  }
+
+  // ------------------------------------------------------------------- boot --
+
+  form.addEventListener('input', render);
+  form.addEventListener('change', render);
+  form.addEventListener('submit', (event) => event.preventDefault());
+
+  document.getElementById('copy-btn').addEventListener('click', copyLink);
+  document.getElementById('reset-btn').addEventListener('click', reset);
+
+  const initial = loadFromUrl() || loadStored();
+  if (initial) applyState(initial);
+
+  render();
+})();
+</script>
+</body>
+</html>
