@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f2f4f9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
-<meta name="description" content="Work out how much each person pays per month for a mobile plan, sub-lines, a phone on contract and a staff rebate.">
+<meta name="description" content="Work out how much each person pays per month for a mobile plan, sub-lines, a phone on contract and a staff rebate — with the option to keep the rebate on the main line only.">
 <title>Mobile Plan Split Calculator — cost per person per month</title>
 <style>
   :root {
@@ -121,11 +121,46 @@
     line-height: 1.08;
   }
 
-  #per-person-month {
+  .big .amount {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     color: var(--accent);
   }
+
+  .payees {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px 18px;
+    margin-top: 6px;
+  }
+
+  /* when the rebate is main-line only the two amounts differ, so show them side by side */
+  .payees.split { grid-template-columns: 1fr 1fr; }
+
+  .payee { min-width: 0; }
+
+  .payee-label {
+    margin: 0;
+    font-size: .76rem;
+    font-weight: 600;
+    letter-spacing: .01em;
+    color: var(--muted);
+  }
+
+  .payee .big {
+    margin-top: 2px;
+    font-size: clamp(1.85rem, 9.5vw, 3rem);
+  }
+
+  /* one shared figure: keep the original headline scale and let the eyebrow label it */
+  .payees:not(.split) .payee-label { display: none; }
+
+  .payees:not(.split) .big {
+    margin-top: 5px;
+    font-size: clamp(2.1rem, 11vw, 3.4rem);
+  }
+
+  .payees.split .big { font-size: clamp(1.45rem, 7vw, 2.4rem); }
 
   .big-unit {
     font-size: clamp(.85rem, 3.4vw, 1rem);
@@ -148,14 +183,16 @@
     margin-top: 14px;
   }
 
-  @media (min-width: 600px) {
-    .stats { grid-template-columns: repeat(4, 1fr); }
+  @media (min-width: 560px) {
+    .stats { grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); }
   }
 
   /* very narrow screens: one stat per row so figures never truncate */
   @media (max-width: 339px) {
     .stats { grid-template-columns: 1fr; }
   }
+
+  .stat[hidden] { display: none; }
 
   .stat {
     background: var(--card);
@@ -292,6 +329,86 @@
   }
 
   .hint[hidden] { display: none; }
+
+  /* ---------- switch ---------- */
+
+  .field.full { grid-column: 1 / -1; }
+
+  .field .switch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 12px;
+    min-height: 48px;
+    background: var(--input);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-size: .875rem;
+    line-height: 1.3;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color .12s ease, box-shadow .12s ease;
+  }
+
+  .field .switch:hover { border-color: var(--accent-line); }
+
+  /* same focus treatment as the number inputs */
+  .field .switch:has(input:focus-visible) {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .field .switch input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .switch .track {
+    position: relative;
+    flex: none;
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--muted) 40%, var(--input));
+    transition: background .14s ease, border-color .14s ease;
+  }
+
+  .switch .track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--card);
+    box-shadow: 0 1px 3px rgba(16, 24, 40, .4);
+    transition: transform .14s ease;
+  }
+
+  .switch input:checked + .track {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .switch input:checked + .track::after { transform: translateX(18px); }
+
+  .switch-text { flex: 1 1 auto; min-width: 0; }
+
+  .field-note {
+    margin: 6px 0 0;
+    font-size: .76rem;
+    color: var(--muted);
+  }
 
   .banner {
     margin: 0;
@@ -489,19 +606,34 @@
 
   <header>
     <h1>Mobile plan split</h1>
-    <p class="lede">How much each person really pays per month — plan, sub-lines, the phone deal and your staff rebate, all in one number.</p>
+    <p class="lede">How much each person really pays per month — plan, sub-lines, the phone deal and your staff rebate, all in one number. Keep the rebate with the main line if it's yours alone.</p>
   </header>
 
   <!-- ===== Result ===== -->
   <section class="card result" aria-labelledby="result-title">
     <p class="eyebrow" id="result-title">Each person pays</p>
-    <p class="big"><span id="per-person-month">—</span><span class="big-unit">/ month</span></p>
+
+    <div class="payees" id="payees">
+      <div class="payee">
+        <p class="payee-label" id="main-label">Each person</p>
+        <p class="big"><span class="amount" id="main-line-month">—</span><span class="big-unit">/ month</span></p>
+      </div>
+      <div class="payee" id="sub-payee" hidden>
+        <p class="payee-label">Per sub-line</p>
+        <p class="big"><span class="amount" id="sub-line-month">—</span><span class="big-unit">/ month</span></p>
+      </div>
+    </div>
+
     <p class="result-note" id="result-note">—</p>
 
     <div class="stats">
       <div class="stat">
-        <span class="stat-label">Per person, whole term</span>
-        <span class="stat-value" id="stat-per-person-total">—</span>
+        <span class="stat-label" id="stat-main-label">Per person, whole term</span>
+        <span class="stat-value" id="stat-main-total">—</span>
+      </div>
+      <div class="stat" id="stat-sub-wrap" hidden>
+        <span class="stat-label">Per sub-line, whole term</span>
+        <span class="stat-value" id="stat-sub-total">—</span>
       </div>
       <div class="stat">
         <span class="stat-label">Group total, whole term</span>
@@ -613,6 +745,16 @@
           </div>
           <p class="hint" hidden></p>
         </div>
+
+        <div class="field full">
+          <label class="switch" for="rebateMainOnly">
+            <input type="checkbox" role="switch" id="rebateMainOnly" name="rebateMainOnly">
+            <span class="track" aria-hidden="true"></span>
+            <span class="switch-text">Rebate applies to the main line only</span>
+          </label>
+          <p class="field-note">Off: the rebate is shared evenly. On: the whole rebate comes off the main line's share.</p>
+          <p class="hint" hidden></p>
+        </div>
       </div>
     </div>
 
@@ -634,12 +776,23 @@
     <summary>How this is calculated</summary>
     <div class="inner">
       <p><code>people = sub-lines + 1</code> (the main line is a person too).</p>
-      <span class="formula">monthly service = plan cost + (cost per sub-line × sub-lines)
-rebate total    = annual rebate × months ÷ 12
-phone net       = contract price − selling price   <span>(negative = profit)</span>
-total cost      = monthly service × months − rebate total + phone net
-per person/mo   = total cost ÷ months ÷ people</span>
+      <span class="formula">monthly service    = plan cost + (cost per sub-line × sub-lines)
+service total      = monthly service × months
+rebate total       = annual rebate × months ÷ 12
+phone net          = contract price − selling price   <span>(negative = profit)</span>
+cost before rebate = service total + phone net
+equal share        = cost before rebate ÷ people
+
+rebate shared (toggle off):
+  each person      = (cost before rebate − rebate total) ÷ people
+
+rebate to the main line only (toggle on):
+  main line        = equal share − rebate total
+  each sub-line    = equal share
+
+per line / month   = whole-term amount ÷ months</span>
       <p>The phone retail price is reference only: it shows the resale value of the deal, but it is not part of the split. The split uses what you actually paid (contract price) against what you actually sold it for (selling price).</p>
+      <p>With "rebate applies to the main line only" switched on, the service and phone costs are still split evenly and the whole rebate comes off the main line's share — so the group total is unchanged, but the main line can end up paying less than nothing if the rebate is bigger than its share.</p>
       <p>Everything runs in your browser. Nothing is uploaded anywhere.</p>
     </div>
   </details>
@@ -669,9 +822,12 @@ per person/mo   = total cost ÷ months ÷ people</span>
     annualRebate: '300'
   };
 
-  const DEFAULTS = Object.fromEntries(
-    Object.entries(DEFAULT_TEXT).map(([k, v]) => [k, Number(v)])
-  );
+  const DEFAULTS = {
+    ...Object.fromEntries(
+      Object.entries(DEFAULT_TEXT).map(([k, v]) => [k, Number(v)])
+    ),
+    rebateMainOnly: false
+  };
 
   const FIELDS = [
     { key: 'planCost',      param: 'p', min: 0,    max: 1e6 },
@@ -681,7 +837,8 @@ per person/mo   = total cost ÷ months ÷ people</span>
     { key: 'contractPrice', param: 'c', min: 0,    max: 1e7 },
     { key: 'subLineCost',   param: 'l', min: 0,    max: 1e5 },
     { key: 'subLineCount',  param: 'm', min: 0,    max: 1000, integer: true },
-    { key: 'annualRebate',  param: 'a', min: 0,    max: 1e7 }
+    { key: 'annualRebate',  param: 'a', min: 0,    max: 1e7 },
+    { key: 'rebateMainOnly', param: 'ro', bool: true }
   ];
 
   // ---------------------------------------------------------------- helpers --
@@ -729,9 +886,17 @@ per person/mo   = total cost ÷ months ÷ people</span>
   const banner = document.getElementById('banner');
   const breakdown = document.getElementById('breakdown');
   const breakdownCard = document.getElementById('breakdown-card');
-  const perPersonMonth = document.getElementById('per-person-month');
+  const payees = document.getElementById('payees');
+  const subPayee = document.getElementById('sub-payee');
+  const resultTitle = document.getElementById('result-title');
+  const mainLabel = document.getElementById('main-label');
+  const mainLineMonth = document.getElementById('main-line-month');
+  const subLineMonth = document.getElementById('sub-line-month');
   const resultNote = document.getElementById('result-note');
-  const statPerPersonTotal = document.getElementById('stat-per-person-total');
+  const statMainLabel = document.getElementById('stat-main-label');
+  const statMainTotal = document.getElementById('stat-main-total');
+  const statSubWrap = document.getElementById('stat-sub-wrap');
+  const statSubTotal = document.getElementById('stat-sub-total');
   const statGroupTotal = document.getElementById('stat-group-total');
   const statGroupMonth = document.getElementById('stat-group-month');
   const statPhoneLabel = document.getElementById('stat-phone-label');
@@ -740,6 +905,16 @@ per person/mo   = total cost ÷ months ÷ people</span>
   const monthsYears = document.getElementById('months-years');
   const toastEl = document.getElementById('toast');
 
+  /** current form values: numbers/selects as strings, the switch as a boolean */
+  function readInputs() {
+    const raw = {};
+    for (const field of FIELDS) {
+      const input = el[field.key];
+      raw[field.key] = field.bool ? input.checked : input.value;
+    }
+    return raw;
+  }
+
   // ------------------------------------------------------------- validation --
 
   function validate(raw) {
@@ -747,6 +922,11 @@ per person/mo   = total cost ÷ months ÷ people</span>
     const errors = {};
 
     for (const field of FIELDS) {
+      if (field.bool) {
+        state[field.key] = Boolean(raw[field.key]);
+        continue;
+      }
+
       const text = raw[field.key] == null ? '' : String(raw[field.key]).trim();
 
       if (text === '') { errors[field.key] = 'Required'; continue; }
@@ -767,6 +947,13 @@ per person/mo   = total cost ÷ months ÷ people</span>
   function sanitize(obj) {
     const out = {};
     for (const field of FIELDS) {
+      if (field.bool) {
+        const raw = obj ? obj[field.key] : false;
+        out[field.key] =
+          raw === true || raw === 1 || raw === '1' || raw === 'true';
+        continue;
+      }
+
       const value = Number(obj ? obj[field.key] : NaN);
       const ok =
         Number.isFinite(value) &&
@@ -792,6 +979,15 @@ per person/mo   = total cost ÷ months ÷ people</span>
     const perPersonPerMonth = accountPerMonth / people;
     const perPersonTotal = totalCost / people;
 
+    // Service and phone are always split equally; the rebate is the only thing
+    // that can be reserved for the main line.
+    const preRebateTotal = serviceTotal + phoneNet;
+    const equalShareTotal = preRebateTotal / people;
+    const mainLineTotal = s.rebateMainOnly ? equalShareTotal - rebateTotal : perPersonTotal;
+    const subLineTotal = s.rebateMainOnly ? equalShareTotal : perPersonTotal;
+    const mainLinePerMonth = mainLineTotal / s.months;
+    const subLinePerMonth = subLineTotal / s.months;
+
     const phoneProfit = s.sellingPrice - s.contractPrice;
     const retailSave = s.retailPrice - s.contractPrice;
     const retailSavePct = s.retailPrice > 0 ? (retailSave / s.retailPrice) * 100 : 0;
@@ -806,6 +1002,12 @@ per person/mo   = total cost ÷ months ÷ people</span>
       accountPerMonth,
       perPersonPerMonth,
       perPersonTotal,
+      preRebateTotal,
+      equalShareTotal,
+      mainLineTotal,
+      subLineTotal,
+      mainLinePerMonth,
+      subLinePerMonth,
       phoneProfit,
       retailSave,
       retailSavePct
@@ -833,6 +1035,7 @@ per person/mo   = total cost ÷ months ÷ people</span>
 
   function renderBreakdown(s, r) {
     const years = s.months / 12;
+    const split = s.rebateMainOnly && s.subLineCount > 0;
     const fragments = [];
 
     fragments.push(row(
@@ -843,36 +1046,83 @@ per person/mo   = total cost ÷ months ÷ people</span>
       `× ${s.months} months of service`,
       signed(r.serviceTotal)
     ));
-    fragments.push(row(
-      `Staff rebate (${years} ${plural(years, 'year')} × ${money(s.annualRebate)})`,
-      signed(-r.rebateTotal)
-    ));
+
+    if (!split) {
+      fragments.push(row(
+        `Staff rebate (${years} ${plural(years, 'year')} × ${money(s.annualRebate)})`,
+        signed(-r.rebateTotal)
+      ));
+    }
+
     fragments.push(row(
       `Phone: paid ${money(s.contractPrice)}, sold for ${money(s.sellingPrice)}`,
       signed(r.phoneNet)
     ));
-    fragments.push(row(
-      `Total for ${r.people} ${peopleWord(r.people)} over ${s.months} months`,
-      money(r.totalCost),
-      { cls: 'total' }
-    ));
-    fragments.push(row(
-      `÷ ${r.people} ${peopleWord(r.people)}`,
-      money(r.perPersonTotal)
-    ));
-    fragments.push(row(
-      `÷ ${s.months} months — per person, per month`,
-      money(r.perPersonPerMonth),
-      { cls: 'answer' }
-    ));
+
+    if (split) {
+      fragments.push(row(
+        `Cost before rebate for ${r.people} ${peopleWord(r.people)}`,
+        money(r.preRebateTotal),
+        { cls: 'total' }
+      ));
+      fragments.push(row(
+        `÷ ${r.people} ${peopleWord(r.people)} — equal share each`,
+        money(r.equalShareTotal)
+      ));
+      fragments.push(row(
+        `Rebate to main line only (${years} ${plural(years, 'year')} × ${money(s.annualRebate)})`,
+        signed(-r.rebateTotal)
+      ));
+      fragments.push(row(
+        `Main line, whole term`,
+        money(r.mainLineTotal)
+      ));
+      fragments.push(row(
+        `Per sub-line, whole term`,
+        money(r.subLineTotal)
+      ));
+      fragments.push(row(
+        `÷ ${s.months} months — main line, per month`,
+        money(r.mainLinePerMonth),
+        { cls: 'answer' }
+      ));
+      fragments.push(row(
+        `÷ ${s.months} months — per sub-line, per month`,
+        money(r.subLinePerMonth),
+        { cls: 'answer' }
+      ));
+    } else {
+      fragments.push(row(
+        `Total for ${r.people} ${peopleWord(r.people)} over ${s.months} months`,
+        money(r.totalCost),
+        { cls: 'total' }
+      ));
+      fragments.push(row(
+        `÷ ${r.people} ${peopleWord(r.people)}`,
+        money(r.perPersonTotal)
+      ));
+      fragments.push(row(
+        `÷ ${s.months} months — per person, per month`,
+        money(r.perPersonPerMonth),
+        { cls: 'answer' }
+      ));
+    }
 
     breakdown.replaceChildren(...fragments);
   }
 
   function clearResults() {
-    perPersonMonth.textContent = '—';
+    payees.classList.remove('split');
+    subPayee.hidden = true;
+    resultTitle.textContent = 'Each person pays';
+    mainLabel.textContent = 'Each person';
+    mainLineMonth.textContent = '—';
+    subLineMonth.textContent = '—';
     resultNote.textContent = '—';
-    statPerPersonTotal.textContent = '—';
+    statMainLabel.textContent = 'Per person, whole term';
+    statMainTotal.textContent = '—';
+    statSubWrap.hidden = true;
+    statSubTotal.textContent = '—';
     statGroupTotal.textContent = '—';
     statGroupMonth.textContent = '—';
     statPhone.textContent = '—';
@@ -882,8 +1132,7 @@ per person/mo   = total cost ÷ months ÷ people</span>
   }
 
   function render() {
-    const raw = {};
-    for (const field of FIELDS) raw[field.key] = el[field.key].value;
+    const raw = readInputs();
 
     const { state, errors, ok } = validate(raw);
 
@@ -908,15 +1157,33 @@ per person/mo   = total cost ÷ months ÷ people</span>
     }
 
     const r = compute(state);
+    const hasSubLines = state.subLineCount > 0;
+    const split = state.rebateMainOnly && hasSubLines;
 
     const linesPart = r.people === 1
       ? 'main line only'
       : `1 main line + ${state.subLineCount} ${plural(state.subLineCount, 'sub-line')}`;
 
-    perPersonMonth.textContent = money(r.perPersonPerMonth);
+    payees.classList.toggle('split', split);
+    subPayee.hidden = !split;
+
+    resultTitle.textContent = split ? 'Each line pays' : 'Each person pays';
+    // the per-figure label only matters when the two amounts differ; otherwise the eyebrow labels it
+    mainLabel.textContent = 'Main line';
+    mainLineMonth.textContent = money(r.mainLinePerMonth);
+    subLineMonth.textContent = split ? money(r.subLinePerMonth) : '—';
+
+    const rebatePart = r.people === 1
+      ? ''
+      : (split ? 'rebate to the main line' : 'rebate split evenly');
     resultNote.textContent =
-      `${r.people} ${peopleWord(r.people)} · ${state.months}-month contract · ${linesPart}`;
-    statPerPersonTotal.textContent = money(r.perPersonTotal);
+      `${r.people} ${peopleWord(r.people)} · ${state.months}-month contract · ${linesPart}` +
+      (rebatePart ? ` · ${rebatePart}` : '');
+
+    statMainLabel.textContent = split ? 'Main line, whole term' : 'Per person, whole term';
+    statMainTotal.textContent = money(r.mainLineTotal);
+    statSubWrap.hidden = !split;
+    statSubTotal.textContent = money(r.subLineTotal);
     statGroupTotal.textContent = money(r.totalCost);
     statGroupMonth.textContent = money(r.accountPerMonth);
 
@@ -976,6 +1243,12 @@ per person/mo   = total cost ÷ months ÷ people</span>
     for (const field of FIELDS) {
       const value = state[field.key];
       const input = el[field.key];
+
+      if (field.bool) {
+        input.checked = Boolean(value);
+        continue;
+      }
+
       // money inputs get 2 decimals; selects and counts stay plain integers
       const plain = field.integer || input.tagName === 'SELECT';
       input.value = plain ? String(value) : value.toFixed(2);
@@ -987,6 +1260,11 @@ per person/mo   = total cost ÷ months ÷ people</span>
   function buildUrl(state) {
     const params = new URLSearchParams();
     for (const field of FIELDS) {
+      if (field.bool) {
+        // only encode the non-default state so ordinary links stay short
+        if (state[field.key]) params.set(field.param, '1');
+        continue;
+      }
       params.set(field.param, trimNumber(state[field.key]));
     }
     const url = new URL(window.location.href);
@@ -1019,8 +1297,7 @@ per person/mo   = total cost ÷ months ÷ people</span>
   // ---------------------------------------------------------------- actions --
 
   async function copyLink() {
-    const raw = {};
-    for (const field of FIELDS) raw[field.key] = el[field.key].value;
+    const raw = readInputs();
     const { state, ok } = validate(raw);
     if (!ok) {
       toast('Fix the highlighted fields first');
