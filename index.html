@@ -3,13 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f2f4f9" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f4f9">
+<script>
+  // apply the saved theme before first paint so a dark reload never flashes light
+  try {
+    if (localStorage.getItem('mobile-plan-split:theme') === 'dark') {
+      document.documentElement.dataset.theme = 'dark';
+      document.querySelector('meta[name="theme-color"]').content = '#0b1020';
+    }
+  } catch (error) { /* storage blocked — stay light */ }
+</script>
 <meta name="description" content="Work out how much each person pays per month for a mobile plan, sub-lines, a phone on contract and a staff rebate — with the option to keep the rebate on the main line only.">
 <title>Mobile Plan Split Calculator — cost per person per month</title>
 <style>
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
     --bg: #f2f4f9;
     --card: #ffffff;
     --input: #f8f9fc;
@@ -26,22 +34,22 @@
     --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 10px 28px -16px rgba(16, 24, 40, .28);
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0b1020;
-      --card: #151b2e;
-      --input: #101728;
-      --ink: #e9edf7;
-      --muted: #98a2b3;
-      --line: #26304a;
-      --accent: #8e9bff;
-      --accent-ink: #0b1020;
-      --accent-soft: #1b2440;
-      --accent-line: #2f3d63;
-      --good: #4ade80;
-      --bad: #ff8a80;
-      --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 14px 32px -18px rgba(0, 0, 0, .9);
-    }
+  /* dark is opt-in through the toggle — the OS setting is deliberately ignored */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0b1020;
+    --card: #151b2e;
+    --input: #101728;
+    --ink: #e9edf7;
+    --muted: #98a2b3;
+    --line: #26304a;
+    --accent: #8e9bff;
+    --accent-ink: #0b1020;
+    --accent-soft: #1b2440;
+    --accent-line: #2f3d63;
+    --good: #4ade80;
+    --bad: #ff8a80;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 14px 32px -18px rgba(0, 0, 0, .9);
   }
 
   * { box-sizing: border-box; }
@@ -84,6 +92,42 @@
     color: var(--muted);
     font-size: .9rem;
   }
+
+  /* ---------- header + theme toggle ---------- */
+
+  .topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .titles { min-width: 0; }
+
+  .theme-toggle {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    border-radius: 12px;
+    color: var(--ink);
+  }
+
+  .theme-toggle:hover { border-color: var(--accent-line); }
+
+  .theme-toggle svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+  }
+
+  .theme-toggle .icon-sun { display: none; }
+
+  :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+  :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
 
   .card {
     background: var(--card);
@@ -314,6 +358,11 @@
     background-repeat: no-repeat;
     background-position: right 0 center;
     background-size: 16px 16px;
+  }
+
+  /* the chevron is an inline SVG, so the dark theme needs its own stroke colour */
+  :root[data-theme="dark"] .input-wrap select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2398a2b3' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M5 8l5 5 5-5'/></svg>");
   }
 
   input[type="number"]::-webkit-outer-spin-button,
@@ -605,8 +654,21 @@
 <div class="wrap">
 
   <header>
-    <h1>Mobile plan split</h1>
-    <p class="lede">How much each person really pays per month — plan, sub-lines, the phone deal and your staff rebate, all in one number. Keep the rebate with the main line if it's yours alone.</p>
+    <div class="topbar">
+      <div class="titles">
+        <h1>Mobile plan split</h1>
+        <p class="lede">How much each person really pays per month — plan, sub-lines, the phone deal and your staff rebate, all in one number. Keep the rebate with the main line if it's yours alone.</p>
+      </div>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme" title="Switch to dark theme">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8Z"/>
+        </svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+        </svg>
+      </button>
+    </div>
   </header>
 
   <!-- ===== Result ===== -->
@@ -797,7 +859,7 @@ per line / month   = whole-term amount ÷ months</span>
     </div>
   </details>
 
-  <footer>Values save automatically on this device and are encoded into the URL when you share it.</footer>
+  <footer>Values save automatically on this device and are encoded into the URL when you share it. Your light or dark choice is remembered separately.</footer>
 
 </div>
 
@@ -810,6 +872,8 @@ per line / month   = whole-term amount ÷ months</span>
   // ---------------------------------------------------------------- config --
 
   const STORAGE_KEY = 'mobile-plan-split:v1';
+  const THEME_KEY = 'mobile-plan-split:theme';
+  const THEME_COLOR = { light: '#f2f4f9', dark: '#0b1020' };
 
   const DEFAULT_TEXT = {
     planCost: '49.60',
@@ -904,6 +968,8 @@ per line / month   = whole-term amount ÷ months</span>
   const phoneNote = document.getElementById('phone-note');
   const monthsYears = document.getElementById('months-years');
   const toastEl = document.getElementById('toast');
+  const themeToggle = document.getElementById('theme-toggle');
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
 
   /** current form values: numbers/selects as strings, the switch as a boolean */
   function readInputs() {
@@ -1283,6 +1349,42 @@ per line / month   = whole-term amount ÷ months</span>
     }, 300);
   }
 
+  // ----------------------------------------------------------------- theme --
+
+  function readTheme() {
+    try {
+      return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+    } catch (error) {
+      return 'light';
+    }
+  }
+
+  function applyTheme(theme) {
+    const dark = theme === 'dark';
+    const root = document.documentElement;
+
+    if (dark) root.dataset.theme = 'dark';
+    else delete root.dataset.theme;
+
+    if (themeMeta) themeMeta.content = dark ? THEME_COLOR.dark : THEME_COLOR.light;
+
+    const label = dark ? 'Switch to light theme' : 'Switch to dark theme';
+    themeToggle.setAttribute('aria-pressed', dark ? 'true' : 'false');
+    themeToggle.setAttribute('aria-label', label);
+    themeToggle.title = label;
+  }
+
+  function toggleTheme() {
+    const theme = readTheme() === 'dark' ? 'light' : 'dark';
+    applyTheme(theme);
+
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch (error) {
+      /* private mode — the choice simply won't be remembered */
+    }
+  }
+
   // ----------------------------------------------------------------- toast --
 
   let toastTimer = 0;
@@ -1362,6 +1464,10 @@ per line / month   = whole-term amount ÷ months</span>
 
   document.getElementById('copy-btn').addEventListener('click', copyLink);
   document.getElementById('reset-btn').addEventListener('click', reset);
+  themeToggle.addEventListener('click', toggleTheme);
+
+  // sync the button and meta colour with whatever the head script already applied
+  applyTheme(readTheme());
 
   // always populate through applyState so first load, URL, storage and reset
   // all share one formatting rule (and DEFAULTS is the single source of truth)
