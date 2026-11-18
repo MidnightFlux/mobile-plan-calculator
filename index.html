@@ -1055,9 +1055,8 @@ per person/mo   = total cost ÷ months ÷ people</span>
   }
 
   function reset() {
-    for (const field of FIELDS) {
-      el[field.key].value = DEFAULT_TEXT[field.key];
-    }
+    // go through applyState so Reset formats values exactly like every other load path
+    applyState(DEFAULTS);
 
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -1087,8 +1086,9 @@ per person/mo   = total cost ÷ months ÷ people</span>
   document.getElementById('copy-btn').addEventListener('click', copyLink);
   document.getElementById('reset-btn').addEventListener('click', reset);
 
-  const initial = loadFromUrl() || loadStored();
-  if (initial) applyState(initial);
+  // always populate through applyState so first load, URL, storage and reset
+  // all share one formatting rule (and DEFAULTS is the single source of truth)
+  applyState(loadFromUrl() || loadStored() || DEFAULTS);
 
   render();
 })();
