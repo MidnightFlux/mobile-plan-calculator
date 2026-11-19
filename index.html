@@ -264,12 +264,6 @@
     text-overflow: ellipsis;
   }
 
-  .phone-note {
-    margin: 10px 0 0;
-    font-size: .8rem;
-    color: var(--muted);
-  }
-
   /* ---------- form ---------- */
 
   .group + .group { margin-top: 16px; }
@@ -899,8 +893,6 @@
         <span class="stat-value" id="stat-phone">—</span>
       </div>
     </div>
-
-    <p class="phone-note" id="phone-note"></p>
   </section>
 
   <p class="banner" id="banner" role="alert" hidden>Check the highlighted fields — a value is missing or invalid.</p>
@@ -1171,7 +1163,6 @@
   const statGroupMonth = document.getElementById('stat-group-month');
   const statPhoneLabel = document.getElementById('stat-phone-label');
   const statPhone = document.getElementById('stat-phone');
-  const phoneNote = document.getElementById('phone-note');
   const monthsYears = document.getElementById('months-years');
   const subLineMinus = document.getElementById('sub-line-minus');
   const subLinePlus = document.getElementById('sub-line-plus');
@@ -1460,7 +1451,6 @@
     statGroupMonth.textContent = '—';
     statPhone.textContent = '—';
     statPhoneLabel.textContent = 'Phone resale profit';
-    phoneNote.textContent = '';
     breakdown.replaceChildren();
   }
 
@@ -1569,12 +1559,6 @@
     const profitable = r.phoneProfit >= 0;
     statPhoneLabel.textContent = profitable ? 'Phone resale profit' : 'Phone net cost';
     statPhone.textContent = money(Math.abs(r.phoneProfit));
-
-    const discountBit = r.retailSave > 0
-      ? ` · $${MONEY.format(r.retailSave)} (${r.retailSavePct.toFixed(1)}%) below retail`
-      : '';
-    phoneNote.textContent =
-      `Retail ${money(state.retailPrice)} · contract ${money(state.contractPrice)}${discountBit} · sold for ${money(state.sellingPrice)}. Retail price is reference only.`;
 
     renderBreakdown(state, r);
 
