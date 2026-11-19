@@ -369,7 +369,94 @@
   input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
 
-  .field.invalid .input-wrap { border-color: var(--bad); }
+  /* ---------- stepper (sub-line count) ---------- */
+
+  .stepper {
+    display: flex;
+    align-items: stretch;
+    background: var(--input);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    min-height: 48px;
+    overflow: hidden;
+    transition: border-color .12s ease, box-shadow .12s ease;
+  }
+
+  .stepper:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  /* the value is display-only — the two buttons are the only way in */
+  .stepper input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    padding: 12px 0;
+    border-radius: 12px;
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .stepper input:focus { outline: none; }
+
+  .step-btn {
+    flex: none;
+    width: 54px;
+    min-height: 46px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background .12s ease, color .12s ease, opacity .12s ease;
+  }
+
+  .step-btn:not([aria-disabled="true"]):hover {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  /* aria-disabled, not the disabled attribute, so focus survives rapid tapping */
+  .step-btn[aria-disabled="true"] {
+    color: var(--muted);
+    opacity: .4;
+    cursor: default;
+  }
+
+  .step-btn[aria-disabled="true"]:active { transform: none; }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .field.invalid .input-wrap,
+  .field.invalid .stepper { border-color: var(--bad); }
 
   .hint {
     margin: 5px 0 0;
@@ -790,12 +877,14 @@
         </div>
 
         <div class="field">
-          <label for="subLineCount">Number of sub-lines</label>
-          <div class="input-wrap">
-            <input id="subLineCount" name="subLineCount" type="number" inputmode="numeric" step="1" min="0" value="3">
-            <span class="suffix">lines</span>
+          <label for="subLineCount">Number of sub-lines <span class="unit">max 3</span></label>
+          <div class="stepper">
+            <button type="button" class="step-btn" id="sub-line-minus" aria-label="Remove a sub-line" aria-controls="subLineCount">&minus;</button>
+            <input id="subLineCount" name="subLineCount" type="number" inputmode="numeric" step="1" min="0" max="3" value="3" readonly>
+            <button type="button" class="step-btn" id="sub-line-plus" aria-label="Add a sub-line" aria-controls="subLineCount">+</button>
           </div>
           <p class="hint" hidden></p>
+          <span class="sr-only" id="sub-line-live" role="status" aria-live="polite"></span>
         </div>
 
         <div class="field">
@@ -837,7 +926,7 @@
   <details>
     <summary>How this is calculated</summary>
     <div class="inner">
-      <p><code>people = sub-lines + 1</code> (the main line is a person too).</p>
+      <p><code>people = sub-lines + 1</code> (the main line is a person too). Sub-lines can be 0–3.</p>
       <span class="formula">monthly service    = plan cost + (cost per sub-line × sub-lines)
 service total      = monthly service × months
 rebate total       = annual rebate × months ÷ 12
@@ -900,7 +989,7 @@ per line / month   = whole-term amount ÷ months</span>
     { key: 'sellingPrice',  param: 's', min: 0,    max: 1e7 },
     { key: 'contractPrice', param: 'c', min: 0,    max: 1e7 },
     { key: 'subLineCost',   param: 'l', min: 0,    max: 1e5 },
-    { key: 'subLineCount',  param: 'm', min: 0,    max: 1000, integer: true },
+    { key: 'subLineCount',  param: 'm', min: 0,    max: 3,   integer: true },
     { key: 'annualRebate',  param: 'a', min: 0,    max: 1e7 },
     { key: 'rebateMainOnly', param: 'ro', bool: true }
   ];
@@ -967,6 +1056,9 @@ per line / month   = whole-term amount ÷ months</span>
   const statPhone = document.getElementById('stat-phone');
   const phoneNote = document.getElementById('phone-note');
   const monthsYears = document.getElementById('months-years');
+  const subLineMinus = document.getElementById('sub-line-minus');
+  const subLinePlus = document.getElementById('sub-line-plus');
+  const subLineLive = document.getElementById('sub-line-live');
   const toastEl = document.getElementById('toast');
   const themeToggle = document.getElementById('theme-toggle');
   const themeMeta = document.querySelector('meta[name="theme-color"]');
@@ -1197,6 +1289,45 @@ per line / month   = whole-term amount ÷ months</span>
     breakdown.replaceChildren();
   }
 
+  // ------------------------------------------------------- sub-line stepper --
+
+  const SUB_LINE_MIN = 0;
+  const SUB_LINE_MAX = 3;
+
+  function readSubLines() {
+    const value = Number(el.subLineCount.value);
+    return Number.isFinite(value) ? value : SUB_LINE_MIN;
+  }
+
+  function clampSubLines(value) {
+    return Math.min(SUB_LINE_MAX, Math.max(SUB_LINE_MIN, Math.round(value)));
+  }
+
+  function stepSubLines(delta) {
+    setSubLines(readSubLines() + delta);
+  }
+
+  /** write a clamped count back, then re-render — no-op when nothing moves */
+  function setSubLines(value) {
+    const next = clampSubLines(value);
+    if (next === clampSubLines(readSubLines())) return;
+    el.subLineCount.value = String(next);
+    render();
+  }
+
+  /** grey out whichever arrow cannot move any further */
+  function syncStepButtons(value) {
+    const count = clampSubLines(value);
+
+    if (count <= SUB_LINE_MIN) subLineMinus.setAttribute('aria-disabled', 'true');
+    else subLineMinus.removeAttribute('aria-disabled');
+
+    if (count >= SUB_LINE_MAX) subLinePlus.setAttribute('aria-disabled', 'true');
+    else subLinePlus.removeAttribute('aria-disabled');
+
+    subLineLive.textContent = `${count} ${plural(count, 'sub-line')} (max ${SUB_LINE_MAX})`;
+  }
+
   function render() {
     const raw = readInputs();
 
@@ -1216,6 +1347,8 @@ per line / month   = whole-term amount ÷ months</span>
 
     banner.hidden = ok;
     breakdownCard.hidden = !ok;
+
+    syncStepButtons(readSubLines());
 
     if (!ok) {
       clearResults();
@@ -1463,6 +1596,28 @@ per line / month   = whole-term amount ÷ months</span>
   form.addEventListener('submit', (event) => event.preventDefault());
 
   document.getElementById('copy-btn').addEventListener('click', copyLink);
+  subLineMinus.addEventListener('click', () => stepSubLines(-1));
+  subLinePlus.addEventListener('click', () => stepSubLines(1));
+
+  // the value is readonly, so give keyboards the same two steps the buttons offer
+  el.subLineCount.addEventListener('keydown', (event) => {
+    const key = event.key;
+
+    if (key === 'ArrowUp' || key === 'ArrowRight' || key === '+' || key === '=') {
+      event.preventDefault();
+      stepSubLines(1);
+    } else if (key === 'ArrowDown' || key === 'ArrowLeft' || key === '-' || key === '_') {
+      event.preventDefault();
+      stepSubLines(-1);
+    } else if (key === 'Home') {
+      event.preventDefault();
+      setSubLines(SUB_LINE_MIN);
+    } else if (key === 'End') {
+      event.preventDefault();
+      setSubLines(SUB_LINE_MAX);
+    }
+  });
+
   document.getElementById('reset-btn').addEventListener('click', reset);
   themeToggle.addEventListener('click', toggleTheme);
 
