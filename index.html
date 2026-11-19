@@ -612,6 +612,50 @@
 
   .rows { display: grid; }
 
+  /* stage heading inside the breakdown — a divider, not a row */
+  .brk-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 18px 0 2px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .brk-head:first-child { margin-top: 2px; }
+
+  .brk-title { min-width: 0; }
+
+  /* step number, so the section reads 1 → 2 → 3 */
+  .brk-num {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-line);
+    color: var(--accent);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  /* duration / scope of the stage — small and quiet on the right */
+  .brk-meta {
+    margin-left: auto;
+    flex: none;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    text-transform: none;
+    color: var(--muted);
+  }
+
   .row {
     display: flex;
     align-items: baseline;
@@ -625,7 +669,22 @@
 
   .row:last-child { border-bottom: 0; }
 
-  .row .lbl { flex: 1 1 auto; min-width: 0; }
+  .row .lbl {
+    flex: 1 1 auto;
+    min-width: 0;
+    /* a wrapped note must not drag the value off its first-line baseline */
+    display: block;
+  }
+
+  /* the arithmetic behind the figure, quiet enough to stay secondary */
+  .row .note {
+    display: block;
+    margin-top: 2px;
+    font-size: .76rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--muted);
+  }
 
   .row .val {
     flex: none;
@@ -644,13 +703,17 @@
   }
 
   .row.answer {
-    border-top: 1px solid var(--line);
-    border-bottom: 0;
-    padding-top: 12px;
+    margin-top: 6px;
+    padding: 12px 14px;
+    border: 1px solid var(--accent-line);
+    border-radius: 12px;
+    background: var(--accent-soft);
     font-weight: 750;
     font-size: 1rem;
     color: var(--accent);
   }
+
+  .row.answer .note { color: var(--muted); }
 
   .row.answer .val { color: var(--accent); }
 
@@ -693,17 +756,56 @@
     color: var(--ink);
   }
 
-  .formula {
-    display: block;
+  /* worked calculation shown in the formula disclosure */
+  .calc {
     margin: 0 0 8px;
     padding: 10px 12px;
     background: var(--input);
     border: 1px solid var(--line);
     border-radius: 10px;
+  }
+
+  .calc-step + .calc-step { margin-top: 10px; }
+
+  .calc-title {
+    margin: 0 0 6px;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
     color: var(--ink);
-    white-space: pre-wrap;
+  }
+
+  .calc-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 6px;
+    padding: 2px 0;
+    font-size: .82rem;
+    line-height: 1.45;
+  }
+
+  /* continuation lines under a labelled case */
+  .calc-line.sub { padding-left: 10px; }
+
+  .calc-lbl {
+    flex: 0 0 auto;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .calc-expr {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--muted);
     overflow-wrap: anywhere;
-    line-height: 1.6;
+  }
+
+  .calc-note {
+    flex: 0 0 auto;
+    font-size: .78rem;
+    color: var(--muted);
   }
 
   footer {
@@ -923,7 +1025,7 @@
   <!-- ===== Breakdown ===== -->
   <section class="card" id="breakdown-card" aria-labelledby="breakdown-title">
     <h2 id="breakdown-title">Where the money goes</h2>
-    <p class="card-sub">Whole contract, all people included. Green means money coming back.</p>
+    <p class="card-sub">First what the whole contract costs, then how it divides between the lines. Green means money coming back.</p>
     <div class="rows" id="breakdown"></div>
   </section>
 
@@ -932,21 +1034,31 @@
     <summary>How this is calculated</summary>
     <div class="inner">
       <p><code>people = sub-lines + 1</code> (the main line is a person too). Sub-lines can be 0–3.</p>
-      <span class="formula">monthly service    = plan cost + (cost per sub-line × sub-lines)
-service total      = monthly service × months
-rebate total       = annual rebate × months ÷ 12
-phone net          = contract price − selling price   <span>(negative = profit)</span>
-cost before rebate = service total + phone net
-equal share        = cost before rebate ÷ people
 
-rebate shared (toggle off):
-  each person      = (cost before rebate − rebate total) ÷ people
+      <div class="calc">
+        <div class="calc-step">
+          <p class="calc-title">1 · Contract total</p>
+          <div class="calc-line"><span class="calc-lbl">Main plan</span><span class="calc-expr">= plan cost × months</span></div>
+          <div class="calc-line"><span class="calc-lbl">Sub-lines</span><span class="calc-expr">= cost per sub-line × sub-lines × months</span></div>
+          <div class="calc-line"><span class="calc-lbl">Phone deal</span><span class="calc-expr">= contract price − selling price</span><span class="calc-note">(negative = profit)</span></div>
+          <div class="calc-line"><span class="calc-lbl">Staff rebate</span><span class="calc-expr">= annual rebate × months ÷ 12</span></div>
+          <div class="calc-line"><span class="calc-lbl">Total</span><span class="calc-expr">= the four lines above, added up</span></div>
+        </div>
 
-rebate to the main line only (toggle on):
-  main line        = equal share − rebate total
-  each sub-line    = equal share
+        <div class="calc-step">
+          <p class="calc-title">2 · Split across people</p>
+          <div class="calc-line"><span class="calc-lbl">Rebate shared</span><span class="calc-expr">each person = total ÷ people</span></div>
+          <div class="calc-line"><span class="calc-lbl">Rebate to the main line</span><span class="calc-expr">equal share = total before rebate ÷ people</span></div>
+          <div class="calc-line sub"><span class="calc-expr">main line = equal share − staff rebate</span></div>
+          <div class="calc-line sub"><span class="calc-expr">each sub-line = equal share</span></div>
+        </div>
 
-per line / month   = whole-term amount ÷ months</span>
+        <div class="calc-step">
+          <p class="calc-title">3 · Per month</p>
+          <div class="calc-line"><span class="calc-lbl">Any amount</span><span class="calc-expr">= the whole-term amount ÷ months</span></div>
+        </div>
+      </div>
+
       <p>The phone retail price is reference only: it shows the resale value of the deal, but it is not part of the split. The split uses what you actually paid (contract price) against what you actually sold it for (selling price).</p>
       <p>With "rebate applies to the main line only" switched on, the service and phone costs are still split evenly and the whole rebate comes off the main line's share — so the group total is unchanged, but the main line can end up paying less than nothing if the rebate is bigger than its share.</p>
       <p>Everything runs in your browser. Nothing is uploaded anywhere.</p>
@@ -1188,6 +1300,13 @@ per line / month   = whole-term amount ÷ months</span>
     labelEl.className = 'lbl';
     labelEl.textContent = label;
 
+    if (opts.note) {
+      const noteEl = document.createElement('span');
+      noteEl.className = 'note';
+      noteEl.textContent = opts.note;
+      labelEl.append(noteEl);
+    }
+
     const valueEl = document.createElement('span');
     valueEl.className = 'val' + (value.startsWith(MINUS) ? ' neg' : '');
     valueEl.textContent = value;
@@ -1196,79 +1315,130 @@ per line / month   = whole-term amount ÷ months</span>
     return node;
   }
 
-  function renderBreakdown(s, r) {
-    const years = s.months / 12;
-    const split = s.rebateMainOnly && s.subLineCount > 0;
-    const fragments = [];
+  function heading(step, title, meta) {
+    const node = document.createElement('p');
+    node.className = 'brk-head';
 
-    fragments.push(row(
-      `${money(s.planCost)} plan + ${s.subLineCount} × ${money(s.subLineCost)} ${plural(s.subLineCount, 'sub-line')} (per month)`,
-      signed(r.monthlyRecurring)
-    ));
-    fragments.push(row(
-      `× ${s.months} months of service`,
-      signed(r.serviceTotal)
-    ));
+    const numEl = document.createElement('span');
+    numEl.className = 'brk-num';
+    numEl.textContent = String(step);
+    numEl.setAttribute('aria-hidden', 'true');
 
-    if (!split) {
-      fragments.push(row(
-        `Staff rebate (${years} ${plural(years, 'year')} × ${money(s.annualRebate)})`,
-        signed(-r.rebateTotal)
-      ));
+    const titleEl = document.createElement('span');
+    titleEl.className = 'brk-title';
+    titleEl.textContent = title;
+
+    node.append(numEl, titleEl);
+
+    if (meta) {
+      const metaEl = document.createElement('span');
+      metaEl.className = 'brk-meta';
+      metaEl.textContent = meta;
+      node.append(metaEl);
     }
 
+    return node;
+  }
+
+  function renderBreakdown(s, r) {
+    const term = `${s.months} ${plural(s.months, 'month')}`;
+    const years = s.months / 12;
+    const yearText = `${years} ${plural(years, 'year')}`;
+    const peopleText = `${r.people} ${peopleWord(r.people)}`;
+    const hasSubLines = s.subLineCount > 0;
+    const hasRebate = s.annualRebate > 0;
+    // a zero rebate deserves no stage of its own, so it falls back to the shared split
+    const split = s.rebateMainOnly && hasSubLines && hasRebate;
+
+    const planTerm = s.planCost * s.months;
+    const subLinesTerm = s.subLineCost * s.subLineCount * s.months;
+
+    const fragments = [];
+    let step = 0;
+
+    // ---- stage 1: what the contract costs in total ------------------------
+
+    fragments.push(heading(++step, 'Contract total'));
+
+    fragments.push(row('Main plan', money(planTerm), {
+      note: `${money(s.planCost)} a month × ${term}`
+    }));
+
+    if (hasSubLines) {
+      fragments.push(row(`Sub-lines (${s.subLineCount})`, money(subLinesTerm), {
+        note: `${money(s.subLineCost)} × ${s.subLineCount} ${plural(s.subLineCount, 'sub-line')} × ${term}`
+      }));
+    }
+
+    // a shared rebate is part of the group total; a main-line-only rebate is
+    // held back for its own stage, so stage 1 stays "what the contract costs"
+    if (hasRebate && !split) {
+      fragments.push(row('Staff rebate', signed(-r.rebateTotal), {
+        note: `${money(s.annualRebate)} a year × ${yearText}`
+      }));
+    }
+
+    fragments.push(row('Phone deal', signed(r.phoneNet), {
+      note: `paid ${money(s.contractPrice)} · sold for ${money(s.sellingPrice)}`
+    }));
+
+    const totalLabel = split
+      ? 'Total before rebate'
+      : (r.people === 1 ? 'Total' : `Total for ${peopleText}`);
+
     fragments.push(row(
-      `Phone: paid ${money(s.contractPrice)}, sold for ${money(s.sellingPrice)}`,
-      signed(r.phoneNet)
+      totalLabel,
+      money(split ? r.preRebateTotal : r.totalCost),
+      { cls: 'total' }
     ));
 
+    // ---- the main-line-only rebate gets its own short stage ----------------
+
     if (split) {
-      fragments.push(row(
-        `Cost before rebate for ${r.people} ${peopleWord(r.people)}`,
-        money(r.preRebateTotal),
-        { cls: 'total' }
-      ));
-      fragments.push(row(
-        `÷ ${r.people} ${peopleWord(r.people)} — equal share each`,
-        money(r.equalShareTotal)
-      ));
-      fragments.push(row(
-        `Rebate to main line only (${years} ${plural(years, 'year')} × ${money(s.annualRebate)})`,
-        signed(-r.rebateTotal)
-      ));
-      fragments.push(row(
-        `Main line, whole term`,
-        money(r.mainLineTotal)
-      ));
-      fragments.push(row(
-        `Per sub-line, whole term`,
-        money(r.subLineTotal)
-      ));
-      fragments.push(row(
-        `÷ ${s.months} months — main line, per month`,
-        money(r.mainLinePerMonth),
-        { cls: 'answer' }
-      ));
-      fragments.push(row(
-        `÷ ${s.months} months — per sub-line, per month`,
-        money(r.subLinePerMonth),
-        { cls: 'answer' }
-      ));
+      fragments.push(heading(++step, 'Rebate', 'main line only'));
+      fragments.push(row('Staff rebate, whole term', signed(-r.rebateTotal), {
+        note: `${money(s.annualRebate)} a year × ${yearText}`
+      }));
+    }
+
+    // ---- stage 2: how that total divides between the lines -----------------
+
+    if (r.people === 1) {
+      fragments.push(heading(++step, 'Per month'));
+      fragments.push(row('Monthly cost', money(r.perPersonPerMonth), {
+        cls: 'answer',
+        note: `${money(r.totalCost)} ÷ ${term}`
+      }));
+    } else if (split) {
+      fragments.push(heading(++step, `Split across ${peopleText}`));
+      fragments.push(row('Equal share', money(r.equalShareTotal), {
+        note: `${money(r.preRebateTotal)} ÷ ${peopleText}`
+      }));
+      fragments.push(row('Main line', money(r.mainLineTotal), {
+        note: `equal share − ${money(r.rebateTotal)} rebate`
+      }));
+      fragments.push(row('Each sub-line', money(r.subLineTotal), {
+        note: 'equal share, unchanged'
+      }));
+
+      fragments.push(heading(++step, 'Per month'));
+      fragments.push(row('Main line', money(r.mainLinePerMonth), {
+        cls: 'answer',
+        note: `${money(r.mainLineTotal)} ÷ ${term}`
+      }));
+      fragments.push(row('Per sub-line', money(r.subLinePerMonth), {
+        cls: 'answer',
+        note: `${money(r.subLineTotal)} ÷ ${term}`
+      }));
     } else {
-      fragments.push(row(
-        `Total for ${r.people} ${peopleWord(r.people)} over ${s.months} months`,
-        money(r.totalCost),
-        { cls: 'total' }
-      ));
-      fragments.push(row(
-        `÷ ${r.people} ${peopleWord(r.people)}`,
-        money(r.perPersonTotal)
-      ));
-      fragments.push(row(
-        `÷ ${s.months} months — per person, per month`,
-        money(r.perPersonPerMonth),
-        { cls: 'answer' }
-      ));
+      fragments.push(heading(++step, `Split across ${peopleText}`));
+      fragments.push(row('Each person', money(r.perPersonTotal), {
+        note: `${money(r.totalCost)} ÷ ${peopleText}`
+      }));
+      fragments.push(row('Each person, per month', money(r.perPersonPerMonth), {
+        cls: 'answer',
+        note: `${money(r.perPersonTotal)} ÷ ${term}`
+      }));
     }
 
     breakdown.replaceChildren(...fragments);
@@ -1362,7 +1532,9 @@ per line / month   = whole-term amount ÷ months</span>
 
     const r = compute(state);
     const hasSubLines = state.subLineCount > 0;
-    const split = state.rebateMainOnly && hasSubLines;
+    // a zero rebate means "main line only" changes nothing, so both the result
+    // card and the breakdown fall back to the single shared figure
+    const split = state.rebateMainOnly && hasSubLines && state.annualRebate > 0;
 
     const linesPart = r.people === 1
       ? 'main line only'
