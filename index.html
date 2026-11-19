@@ -460,6 +460,19 @@
 
   .hint[hidden] { display: none; }
 
+  /* live "x% below retail" readout under the phone selling price */
+  .field-note {
+    margin: 5px 0 0;
+    font-size: .76rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .field-note[hidden] { display: none; }
+
+  .field-note.down { color: var(--good); }
+  .field-note.up { color: var(--bad); }
+
   /* ---------- switch ---------- */
 
   .field.full { grid-column: 1 / -1; }
@@ -944,6 +957,7 @@
             <span class="prefix">$</span>
             <input id="sellingPrice" name="sellingPrice" type="number" inputmode="decimal" step="0.01" min="0" value="2199">
           </div>
+          <p class="field-note" id="selling-discount" hidden></p>
           <p class="hint" hidden></p>
         </div>
 
@@ -1163,6 +1177,7 @@
   const statGroupMonth = document.getElementById('stat-group-month');
   const statPhoneLabel = document.getElementById('stat-phone-label');
   const statPhone = document.getElementById('stat-phone');
+  const sellingDiscount = document.getElementById('selling-discount');
   const monthsYears = document.getElementById('months-years');
   const subLineMinus = document.getElementById('sub-line-minus');
   const subLinePlus = document.getElementById('sub-line-plus');
@@ -1255,8 +1270,10 @@
     const subLinePerMonth = subLineTotal / s.months;
 
     const phoneProfit = s.sellingPrice - s.contractPrice;
-    const retailSave = s.retailPrice - s.contractPrice;
-    const retailSavePct = s.retailPrice > 0 ? (retailSave / s.retailPrice) * 100 : 0;
+    // how far the selling price sits from retail: negative = reduced, positive = above retail
+    const sellingVsRetailPct = s.retailPrice > 0
+      ? ((s.sellingPrice - s.retailPrice) / s.retailPrice) * 100
+      : null;
 
     return {
       people,
@@ -1275,8 +1292,7 @@
       mainLinePerMonth,
       subLinePerMonth,
       phoneProfit,
-      retailSave,
-      retailSavePct
+      sellingVsRetailPct
     };
   }
 
@@ -1451,7 +1467,32 @@
     statGroupMonth.textContent = '—';
     statPhone.textContent = '—';
     statPhoneLabel.textContent = 'Phone resale profit';
+    clearSellingDiscount();
     breakdown.replaceChildren();
+  }
+
+  /** "12.5% below the retail price" under the selling price field */
+  function clearSellingDiscount() {
+    sellingDiscount.textContent = '';
+    sellingDiscount.hidden = true;
+    sellingDiscount.classList.remove('down', 'up');
+  }
+
+  function renderSellingDiscount(state, r) {
+    if (r.sellingVsRetailPct === null) {
+      clearSellingDiscount();
+      return;
+    }
+
+    const pct = Math.round(r.sellingVsRetailPct * 10) / 10;
+    const amount = `${trimNumber(Math.abs(pct))}%`;
+
+    sellingDiscount.textContent = pct === 0
+      ? 'Same as the retail price'
+      : `${amount} ${pct < 0 ? 'below' : 'above'} the retail price`;
+    sellingDiscount.classList.toggle('down', pct < 0);
+    sellingDiscount.classList.toggle('up', pct > 0);
+    sellingDiscount.hidden = false;
   }
 
   // ------------------------------------------------------- sub-line stepper --
@@ -1559,6 +1600,8 @@
     const profitable = r.phoneProfit >= 0;
     statPhoneLabel.textContent = profitable ? 'Phone resale profit' : 'Phone net cost';
     statPhone.textContent = money(Math.abs(r.phoneProfit));
+
+    renderSellingDiscount(state, r);
 
     renderBreakdown(state, r);
 
