@@ -1151,6 +1151,17 @@
     return String(Math.round(Number(value) * 1e6) / 1e6);
   }
 
+  /**
+   * Percentage text that keeps a small-but-real gap visible:
+   * 12.5 -> "12.5%", 0.0455 -> "0.05%" (never "0%" unless it truly is zero).
+   */
+  function percentText(pct) {
+    const abs = Math.abs(pct);
+    let decimals = 1;
+    while (decimals < 6 && Math.round(abs * 10 ** decimals) === 0) decimals += 1;
+    return trimNumber(Math.round(abs * 10 ** decimals) / 10 ** decimals) + '%';
+  }
+
   // ----------------------------------------------------------------- lookup --
 
   const el = {};
@@ -1271,8 +1282,10 @@
 
     const phoneProfit = s.sellingPrice - s.contractPrice;
     // how far the selling price sits from retail: negative = reduced, positive = above retail
+    // (rounded to cents so floating point noise never fakes a difference)
+    const sellingVsRetail = Math.round((s.sellingPrice - s.retailPrice) * 100) / 100 + 0;
     const sellingVsRetailPct = s.retailPrice > 0
-      ? ((s.sellingPrice - s.retailPrice) / s.retailPrice) * 100
+      ? (sellingVsRetail / s.retailPrice) * 100
       : null;
 
     return {
@@ -1292,6 +1305,7 @@
       mainLinePerMonth,
       subLinePerMonth,
       phoneProfit,
+      sellingVsRetail,
       sellingVsRetailPct
     };
   }
@@ -1484,14 +1498,14 @@
       return;
     }
 
-    const pct = Math.round(r.sellingVsRetailPct * 10) / 10;
-    const amount = `${trimNumber(Math.abs(pct))}%`;
+    const diff = r.sellingVsRetail;
+    const pct = r.sellingVsRetailPct;
 
-    sellingDiscount.textContent = pct === 0
+    sellingDiscount.textContent = diff === 0
       ? 'Same as the retail price'
-      : `${amount} ${pct < 0 ? 'below' : 'above'} the retail price`;
-    sellingDiscount.classList.toggle('down', pct < 0);
-    sellingDiscount.classList.toggle('up', pct > 0);
+      : `${percentText(pct)} ${diff < 0 ? 'below' : 'above'} the retail price`;
+    sellingDiscount.classList.toggle('down', diff < 0);
+    sellingDiscount.classList.toggle('up', diff > 0);
     sellingDiscount.hidden = false;
   }
 
